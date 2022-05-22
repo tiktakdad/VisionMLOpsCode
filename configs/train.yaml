@@ -2,6 +2,7 @@
 defaults:
   - _self_
   - datamodule: coco.yaml
+  - model: coco.yaml
   - trainer: default.yaml
 
 train: True

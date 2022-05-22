@@ -1,11 +1,10 @@
-import json
 import os
+from pathlib import Path
 from typing import Optional, Tuple
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import CocoDetection
-from torchvision.transforms import transforms
-
+import src.utils.transforms as T
 
 class COCODataModule(LightningDataModule):
     def __init__(
@@ -19,8 +18,7 @@ class COCODataModule(LightningDataModule):
         super().__init__()
 
         self.save_hyperparameters(logger=False)
-
-
+        self.coco_dataset_path = Path(self.hparams.data_dir)
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
@@ -33,23 +31,25 @@ class COCODataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         """Download data if needed."""
-        # Download labels
-        from src.utils.general import download
-        segments = False  # segment or box labels
-        url = 'https://github.com/ultralytics/yolov5/releases/download/v1.0/'
-        urls = [url + ('coco2017labels-segments.zip' if segments else 'coco2017labels.zip')]  # labels
-        download(urls, dir=self.data_dir.parent)
-        # Download data
-        urls = ['http://images.cocodataset.org/zips/train2017.zip',  # 19G, 118k images
-                'http://images.cocodataset.org/zips/val2017.zip',  # 1G, 5k images
-                'http://images.cocodataset.org/zips/test2017.zip']  # 7G, 41k images (optional)
-        download(urls, dir=self.data_dir, threads=3)
 
-    def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None):
+        if os.path.exists(self.coco_dataset_path) is not True:
+            # Download labels
+            from src.utils.general import download
+            segments = False  # segment or box labels
+            url = 'https://github.com/ultralytics/yolov5/releases/download/v1.0/'
+            urls = [url + ('coco2017labels-segments.zip' if segments else 'coco2017labels.zip')]  # labels
+            download(urls, dir=self.coco_dataset_path.parent)
+            # Download data
+            urls = ['http://images.cocodataset.org/zips/train2017.zip',  # 19G, 118k images
+                    'http://images.cocodataset.org/zips/val2017.zip',  # 1G, 5k images
+                    'http://images.cocodataset.org/zips/test2017.zip']  # 7G, 41k images (optional)
+            download(urls, dir=self.coco_dataset_path, threads=3)
 
-        normalize = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    def make_coco_transforms(self, image_set, fix_size=False, strong_aug=False, args=None):
+
+        normalize = T.Compose([
+            T.ToTensor(),
+            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
 
         # config the params for data aug
@@ -73,38 +73,38 @@ class COCODataModule(LightningDataModule):
         #     scales2_resize = [int(i*data_aug_scale_overlap) for i in scales2_resize]
         #     scales2_crop = [int(i*data_aug_scale_overlap) for i in scales2_crop]
 
-        datadict_for_print = {
-            'scales': scales,
-            'max_size': max_size,
-            'scales2_resize': scales2_resize,
-            'scales2_crop': scales2_crop
-        }
-        print("data_aug_params:", json.dumps(datadict_for_print, indent=2))
+        # datadict_for_print = {
+        #     'scales': scales,
+        #     'max_size': max_size,
+        #     'scales2_resize': scales2_resize,
+        #     'scales2_crop': scales2_crop
+        # }
+        # print("data_aug_params:", json.dumps(datadict_for_print, indent=2))
 
         if image_set == 'train':
             if fix_size:
-                return transforms.Compose([
-                    transforms.RandomHorizontalFlip(),
-                    transforms.RandomResize([(max_size, max(scales))]),
+                return T.Compose([
+                    T.RandomHorizontalFlip(),
+                    T.RandomResize([(max_size, max(scales))]),
                     normalize,
                 ])
 
             if strong_aug:
-                import datasets.sltransform as SLT
+                from src.utils import sltransform as SLT
 
-                return transforms.Compose([
-                    transforms.RandomHorizontalFlip(),
-                    transforms.RandomSelect(
-                        transforms.RandomResize(scales, max_size=max_size),
-                        transforms.Compose([
-                            transforms.RandomResize(scales2_resize),
-                            transforms.RandomSizeCrop(*scales2_crop),
-                            transforms.RandomResize(scales, max_size=max_size),
+                return T.Compose([
+                    T.RandomHorizontalFlip(),
+                    T.RandomSelect(
+                        T.RandomResize(scales, max_size=max_size),
+                        T.Compose([
+                            T.RandomResize(scales2_resize),
+                            T.RandomSizeCrop(*scales2_crop),
+                            T.RandomResize(scales, max_size=max_size),
                         ])
                     ),
                     SLT.RandomSelectMulti([
                         SLT.RandomCrop(),
-                        # SLtransforms.Rotate(10),
+                        # SLT.Rotate(10),
                         SLT.LightingNoise(),
                         SLT.AdjustBrightness(2),
                         SLT.AdjustContrast(2),
@@ -118,29 +118,30 @@ class COCODataModule(LightningDataModule):
                     normalize,
                 ])
 
-            return transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomSelect(
-                    transforms.RandomResize(scales, max_size=max_size),
-                    transforms.Compose([
-                        transforms.RandomResize(scales2_resize),
-                        transforms.RandomSizeCrop(*scales2_crop),
-                        transforms.RandomResize(scales, max_size=max_size),
+            return T.Compose([
+                T.RandomHorizontalFlip(),
+                T.RandomSelect(
+                    T.RandomResize(scales, max_size=max_size),
+                    T.Compose([
+                        T.RandomResize(scales2_resize),
+                        T.RandomSizeCrop(*scales2_crop),
+                        T.RandomResize(scales, max_size=max_size),
                     ])
                 ),
                 normalize,
             ])
 
         if image_set in ['val', 'test']:
+
             if os.environ.get("GFLOPS_DEBUG_SHILONG", False) == 'INFO':
                 print("Under debug mode for flops calculation only!!!!!!!!!!!!!!!!")
-                return transforms.Compose([
-                    transforms.ResizeDebug((1280, 800)),
+                return T.Compose([
+                    T.ResizeDebug((1280, 800)),
                     normalize,
                 ])
 
-            return transforms.Compose([
-                transforms.RandomResize([max(scales)], max_size=max_size),
+            return T.Compose([
+                T.RandomResize([max(scales)], max_size=max_size),
                 normalize,
             ])
 
@@ -149,11 +150,11 @@ class COCODataModule(LightningDataModule):
     def build(self, image_set):
         mode = 'instances'
         PATHS = {
-            "train": (self.data_dir / "train2017", self.data_dir / "annotations" / f'{mode}_train2017.json'),
-            "train_reg": (self.data_dir / "train2017", self.data_dir / "annotations" / f'{mode}_train2017.json'),
-            "val": (self.data_dir / "val2017", self.data_dir / "annotations" / f'{mode}_val2017.json'),
-            "eval_debug": (self.data_dir / "val2017", self.data_dir / "annotations" / f'{mode}_val2017.json'),
-            "test": (self.data_dir / "test2017", self.data_dir / "annotations" / 'image_info_test-dev2017.json'),
+            "train": (self.coco_dataset_path / "train2017", self.coco_dataset_path / "annotations" / f'{mode}_train2017.json'),
+            "train_reg": (self.coco_dataset_path / "train2017", self.coco_dataset_path / "annotations" / f'{mode}_train2017.json'),
+            "val": (self.coco_dataset_path / "val2017", self.coco_dataset_path / "annotations" / f'{mode}_val2017.json'),
+            "eval_debug": (self.coco_dataset_path / "val2017", self.coco_dataset_path / "annotations" / f'{mode}_val2017.json'),
+            "test": (self.coco_dataset_path / "test2017", self.coco_dataset_path / "annotations" / 'image_info_test-dev2017.json'),
         }
 
         # add some hooks to datasets

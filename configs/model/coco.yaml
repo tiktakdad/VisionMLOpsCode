@@ -3,4 +3,7 @@ lr: 0.001
 weight_decay: 0.0005
 
 net:
-  _target_: src.models.components.simple_dense_net.SimpleDenseNet
+  _target_: src.models.component.yolov5.models.yolo.Model
+  cfg: 'src/models/component/yolov5/models/yolov5s.yaml'
+
+
