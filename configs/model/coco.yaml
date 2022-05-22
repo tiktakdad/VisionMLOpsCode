@@ -1,0 +1,6 @@
+_target_: src.models.coco_module.COCOLitModule
+lr: 0.001
+weight_decay: 0.0005
+
+net:
+  _target_: src.models.components.simple_dense_net.SimpleDenseNet

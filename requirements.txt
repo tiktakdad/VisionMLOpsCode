@@ -1,0 +1,20 @@
+# --------- pytorch --------- #
+torch>=1.10.0
+torchvision>=0.11.0
+pytorch-lightning>=1.5.10
+
+# --------- hydra --------- #
+hydra-core>=1.1.0
+hydra-colorlog>=1.1.0
+
+# --------- loggers --------- #
+# wandb
+
+# --------- linters --------- #
+black           # code formatting
+
+
+# --------- others --------- #
+pytest          # tests
+python-dotenv~=0.20.0
+omegaconf~=2.2.1

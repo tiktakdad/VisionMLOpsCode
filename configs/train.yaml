@@ -1,0 +1,13 @@
+# specify here default training configuration
+defaults:
+  - _self_
+  - datamodule: coco.yaml
+  - trainer: default.yaml
+
+train: True
+
+# path to original working directory
+original_work_dir: ${hydra:runtime.cwd}
+# path to folder with data
+data_dir: ${original_work_dir}/data/
+
