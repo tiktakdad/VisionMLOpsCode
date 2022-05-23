@@ -31,19 +31,21 @@ class COCODataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         """Download data if needed."""
-
         if os.path.exists(self.coco_dataset_path) is not True:
             # Download labels
             from src.utils.general import download
             segments = False  # segment or box labels
-            url = 'https://github.com/ultralytics/yolov5/releases/download/v1.0/'
-            urls = [url + ('coco2017labels-segments.zip' if segments else 'coco2017labels.zip')]  # labels
-            download(urls, dir=self.coco_dataset_path.parent)
+            #url = 'https://github.com/ultralytics/yolov5/releases/download/v1.0/'
+            #urls = [url + ('coco2017labels-segments.zip' if segments else 'coco2017labels.zip')]  # labels
+            #download(urls, dir=self.coco_dataset_path.parent)
             # Download data
             urls = ['http://images.cocodataset.org/zips/train2017.zip',  # 19G, 118k images
                     'http://images.cocodataset.org/zips/val2017.zip',  # 1G, 5k images
                     'http://images.cocodataset.org/zips/test2017.zip']  # 7G, 41k images (optional)
             download(urls, dir=self.coco_dataset_path, threads=3)
+            urls = ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
+                    'http://images.cocodataset.org/annotations/image_info_test2017.zip']
+            download(urls, dir=self.coco_dataset_path, threads=2)
 
     def make_coco_transforms(self, image_set, fix_size=False, strong_aug=False, args=None):
 

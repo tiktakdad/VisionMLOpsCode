@@ -14,14 +14,20 @@ hydra-colorlog>=1.1.0
 # wandb
 
 # --------- linters --------- #
+pre-commit      # hooks for applying linters on commit
 black           # code formatting
-
+isort           # import sorting
+flake8          # code analysis
+nbstripout      # remove output from jupyter notebooks
 
 # --------- others --------- #
 pytest          # tests
 python-dotenv~=0.20.0
 omegaconf~=2.2.1
 
+# --------- yolov5 --------- #
+# VisionMLOpsCode/src/models/component/yolov5 pip install -r requirements.txt
+
 # --------- coco dataset --------- #
 # sudo apt install cython3 # for pycocotools https://github.com/cocodataset/cocoapi/issues/172
-# pycocotools
+# pycocotools>=2.0.4
